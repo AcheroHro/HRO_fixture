@@ -82,6 +82,7 @@ export default function TabView({ user, isAdmin }: { user: any, isAdmin: boolean
         )}
         {activeTab === 'tabla' && (
           <TablaView 
+            currentUserId={user.uid}
             users={users} 
             allPredictions={allPredictions} 
             results={results} 

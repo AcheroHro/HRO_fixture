@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { signInWithRedirect, GoogleAuthProvider, signOut } from 'firebase/auth';
 import { auth } from './firebase';
 import { ensureUserDoc, checkIsAdmin } from './db';
 import { LogIn, LogOut, ShieldAlert } from 'lucide-react';
@@ -11,6 +11,7 @@ export default function App() {
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState('');
 
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(async (currentUser) => {
@@ -27,7 +28,16 @@ export default function App() {
     return () => unsub();
   }, []);
 
-  const login = () => signInWithPopup(auth, provider);
+  const login = async () => {
+    setAuthError('');
+    try {
+      await signInWithRedirect(auth, provider);
+    } catch (error) {
+      console.error('Google sign-in failed', error);
+      const message = error instanceof Error ? error.message : String(error);
+      setAuthError(`No se pudo iniciar sesion con Google. ${message}`);
+    }
+  };
   const logout = () => signOut(auth);
 
   if (loading) return <div className="p-8 text-center text-fifa-blue-dark font-bold bg-white m-4 rounded-xl">Loading...</div>;
@@ -59,6 +69,11 @@ export default function App() {
       ) : (
         <div className="max-w-md mx-auto mt-10 p-6 bg-card text-text-dark rounded-xl shadow-lg text-center mx-4">
           <p className="mb-6 font-bold">Inicia sesión con Google para armar tu prode del Mundial 2026.</p>
+          {authError && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-left text-sm font-semibold text-red-700">
+              {authError}
+            </div>
+          )}
           <button onClick={login} className="w-full bg-fifa-blue text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
              Entrar con Google
           </button>
