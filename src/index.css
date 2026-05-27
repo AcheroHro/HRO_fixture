@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@theme {
+  --color-fifa-blue: #2563eb; /* blue-600 */
+  --color-fifa-blue-dark: #1e40af; /* blue-800 */
+  --color-bg-dark: #f8fafc; /* slate-50 */
+  --color-bg-soft: #f1f5f9; /* slate-100 */
+  --color-card: #ffffff;
+  --color-text-dark: #0f172a; /* slate-900 */
+  --color-muted: #64748b; /* slate-500 */
+  --color-accent: #3b82f6; /* blue-500 */
+}
+
+@layer base {
+  body {
+    @apply bg-bg-dark text-text-dark pb-20 m-0 p-0 font-sans;
+  }
+}
