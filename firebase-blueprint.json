@@ -1,0 +1,59 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile document",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" }
+      }
+    },
+    "Predictions": {
+      "title": "Predictions",
+      "description": "Predictions of the user for all matches",
+      "type": "object",
+      "properties": {
+        "predictions": {
+          "type": "object",
+          "description": "Map of matchId to prediction object"
+        }
+      }
+    },
+    "Results": {
+      "title": "Results",
+      "description": "Official match results map",
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "object",
+          "description": "Map of matchId to real result object"
+        }
+      }
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Admin presence document",
+      "type": "object",
+      "properties": {}
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "Stores user profiles"
+    },
+    "predictions/{userId}": {
+      "schema": "Predictions",
+      "description": "Stores match predictions per user"
+    },
+    "results/official": {
+      "schema": "Results",
+      "description": "Stores official match results, updatable by admin"
+    },
+    "admins/{userId}": {
+      "schema": "Admin",
+      "description": "Verifies admin status of a user"
+    }
+  }
+}
