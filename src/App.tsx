@@ -4,6 +4,7 @@ import {
   getRedirectResult,
   GoogleAuthProvider,
   setPersistence,
+  signInWithPopup,
   signInWithRedirect,
   signOut,
 } from 'firebase/auth';
@@ -80,10 +81,26 @@ export default function App() {
     setAuthError('');
     try {
       await setPersistence(auth, browserLocalPersistence);
-      await signInWithRedirect(auth, provider);
+      await signInWithPopup(auth, provider);
     } catch (error) {
       console.error('Google sign-in failed', error);
-      setAuthError(`No se pudo iniciar sesion con Google. ${errorMessage(error)}`);
+      const message = errorMessage(error);
+      if (
+        message.includes('auth/popup-blocked') ||
+        message.includes('auth/cancelled-popup-request') ||
+        message.includes('auth/popup-closed-by-user')
+      ) {
+        try {
+          await signInWithRedirect(auth, provider);
+          return;
+        } catch (redirectError) {
+          console.error('Google redirect fallback failed', redirectError);
+          setAuthError(`No se pudo iniciar sesion con Google. ${errorMessage(redirectError)}`);
+          return;
+        }
+      }
+
+      setAuthError(`No se pudo iniciar sesion con Google. ${message}`);
     }
   };
   const logout = () => signOut(auth);
