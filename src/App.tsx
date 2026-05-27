@@ -1,11 +1,22 @@
 import { useEffect, useState } from 'react';
-import { signInWithRedirect, GoogleAuthProvider, signOut } from 'firebase/auth';
+import {
+  browserLocalPersistence,
+  getRedirectResult,
+  GoogleAuthProvider,
+  setPersistence,
+  signInWithRedirect,
+  signOut,
+} from 'firebase/auth';
 import { auth } from './firebase';
 import { ensureUserDoc, checkIsAdmin } from './db';
 import { LogIn, LogOut, ShieldAlert } from 'lucide-react';
 import TabView from './components/TabView';
 
 const provider = new GoogleAuthProvider();
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
 
 export default function App() {
   const [user, setUser] = useState<any>(null);
@@ -14,28 +25,65 @@ export default function App() {
   const [authError, setAuthError] = useState('');
 
   useEffect(() => {
-    const unsub = auth.onAuthStateChanged(async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        await ensureUserDoc(currentUser);
-        const adminStatus = await checkIsAdmin(currentUser.uid);
-        setIsAdmin(adminStatus);
-      } else {
-        setIsAdmin(false);
+    let unsub = () => {};
+    let active = true;
+
+    const handleUser = async (currentUser: any) => {
+      if (!active) return;
+
+      try {
+        setUser(currentUser);
+        if (currentUser) {
+          await ensureUserDoc(currentUser);
+          const adminStatus = await checkIsAdmin(currentUser.uid);
+          setIsAdmin(adminStatus);
+        } else {
+          setIsAdmin(false);
+        }
+      } catch (error) {
+        console.error('Auth state handling failed', error);
+        setAuthError(`Ingresaste con Google, pero no se pudo cargar tu usuario. ${errorMessage(error)}`);
+      } finally {
+        if (active) setLoading(false);
       }
-      setLoading(false);
-    });
-    return () => unsub();
+    };
+
+    const initAuth = async () => {
+      try {
+        await setPersistence(auth, browserLocalPersistence);
+        await getRedirectResult(auth);
+      } catch (error) {
+        console.error('Google redirect sign-in failed', error);
+        if (active) {
+          setAuthError(`No se pudo completar el ingreso con Google. ${errorMessage(error)}`);
+        }
+      }
+
+      if (!active) return;
+
+      unsub = auth.onAuthStateChanged(handleUser, (error) => {
+        console.error('Auth subscription failed', error);
+        setAuthError(`No se pudo validar la sesion. ${errorMessage(error)}`);
+        setLoading(false);
+      });
+    };
+
+    initAuth();
+
+    return () => {
+      active = false;
+      unsub();
+    };
   }, []);
 
   const login = async () => {
     setAuthError('');
     try {
+      await setPersistence(auth, browserLocalPersistence);
       await signInWithRedirect(auth, provider);
     } catch (error) {
       console.error('Google sign-in failed', error);
-      const message = error instanceof Error ? error.message : String(error);
-      setAuthError(`No se pudo iniciar sesion con Google. ${message}`);
+      setAuthError(`No se pudo iniciar sesion con Google. ${errorMessage(error)}`);
     }
   };
   const logout = () => signOut(auth);
